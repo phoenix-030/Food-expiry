@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import '../styles/Products.module.css';
 import { 
   Plus, 
+  Minus,
   Trash2, 
   Edit3, 
   ChevronLeft, 
@@ -50,6 +51,7 @@ const Products = () => {
   const [expiryDate, setExpiryDate] = useState('');
   const [location, setLocation] = useState('Fridge');
   const [quantity, setQuantity] = useState('');
+  const [quantityCount, setQuantityCount] = useState('1');
   const [editingImageUrl, setEditingImageUrl] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
 
@@ -143,6 +145,7 @@ const Products = () => {
     setExpiryDate('');
     setLocation('Fridge');
     setQuantity('');
+    setQuantityCount('1');
     setEditingImageUrl('');
     setIsModalOpen(true);
   };
@@ -172,6 +175,7 @@ const Products = () => {
     setExpiryDate(eDate);
     setLocation(p.location || 'Fridge');
     setQuantity(p.quantity || '');
+    setQuantityCount(String(p.quantity_count || 1));
     setIsModalOpen(true);
   };
 
@@ -189,12 +193,14 @@ const Products = () => {
       if (editingId) {
         // Edit Mode
         await api.updateProduct(editingId, {
-          name, category, barcode, purchase_date: purchaseDate, expiry_date: expiryDate, location, quantity, image_url: resolvedImg
+          name, category, barcode, purchase_date: purchaseDate, expiry_date: expiryDate, location, quantity,
+          quantity_count: Math.max(1, parseInt(quantityCount, 10) || 1), image_url: resolvedImg
         });
       } else {
         // Add Mode
         await api.addProduct({
-          name, category, barcode, purchase_date: purchaseDate, expiry_date: expiryDate, location, quantity, image_url: resolvedImg
+          name, category, barcode, purchase_date: purchaseDate, expiry_date: expiryDate, location, quantity,
+          quantity_count: Math.max(1, parseInt(quantityCount, 10) || 1), image_url: resolvedImg
         });
       }
       setIsModalOpen(false);
@@ -415,8 +421,10 @@ const Products = () => {
                               <div className="td-product-cell">
                                 <div className="text-left">
                                   <div className="product-cell-name">{p.name}</div>
-                                  {p.quantity && (
-                                    <div className="product-cell-quantity">{p.quantity}</div>
+                                  {(p.quantity || p.quantity_count > 1) && (
+                                    <div className="product-cell-quantity">
+                                      {p.quantity_count > 1 ? `${p.quantity_count} in stock${p.quantity ? ` · ${p.quantity}` : ''}` : p.quantity}
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -604,7 +612,7 @@ const Products = () => {
                   </div>
                 </div>
 
-                <div className="two-column-grid">
+                <div className="quantity-fields-grid">
                   <div className="form-group">
                     <label className="form-label">Storage Location</label>
                     <select
@@ -628,6 +636,39 @@ const Products = () => {
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Number of Items</label>
+                    <div className="quantity-stepper">
+                      <button
+                        type="button"
+                        className="quantity-stepper-button"
+                        aria-label="Decrease item count"
+                        title="Decrease item count"
+                        onClick={() => setQuantityCount((count) => String(Math.max(1, (parseInt(count, 10) || 1) - 1)))}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <input
+                        type="number"
+                        className="form-input quantity-stepper-input"
+                        min="1"
+                        step="1"
+                        value={quantityCount}
+                        onChange={(e) => setQuantityCount(e.target.value)}
+                        aria-label="Number of items"
+                      />
+                      <button
+                        type="button"
+                        className="quantity-stepper-button"
+                        aria-label="Increase item count"
+                        title="Increase item count"
+                        onClick={() => setQuantityCount((count) => String((parseInt(count, 10) || 1) + 1))}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

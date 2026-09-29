@@ -160,7 +160,7 @@ const History = () => {
                       <td>{formatDate(product.expiry_date)}</td>
                       <td><span className={`history-status ${productStatus.className}`}>{productStatus.label}</span></td>
                       <td>{product.location || 'Pantry'}</td>
-                      <td>{product.quantity || '1 unit'}</td>
+                      <td>{product.quantity_count > 1 ? `${product.quantity_count} in stock${product.quantity ? ` · ${product.quantity}` : ''}` : (product.quantity || '1 unit')}</td>
                     </tr>;
                   })}</tbody>
                 </table>

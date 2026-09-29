@@ -59,18 +59,59 @@ const getProducts = async (req, res) => {
 // POST /api/products
 const addProduct = async (req, res) => {
   const userId = req.user.id;
-  const { name, category, barcode, purchase_date, expiry_date, location, quantity, image_url } = req.body;
+  const { name, category, barcode, purchase_date, expiry_date, location, quantity, quantity_count, image_url } = req.body;
 
   if (!name || !category || !purchase_date || !expiry_date) {
     return res.status(400).json({ error: 'Name, category, purchase_date, and expiry_date are required.' });
   }
 
   try {
-    const [result] = await db.query(
-      `INSERT INTO products (user_id, name, category, barcode, purchase_date, expiry_date, location, quantity, image_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, name, category, barcode || null, purchase_date, expiry_date, location || 'Fridge', quantity || null, image_url || null]
-    );
+    const quantityToAdd = Math.max(1, parseInt(quantity_count, 10) || 1);
+    let savedProduct;
+
+    if (barcode) {
+      const connection = await db.getConnection();
+      try {
+        await connection.beginTransaction();
+        const [existingProducts] = await connection.query(
+          'SELECT * FROM products WHERE user_id = ? AND barcode = ? AND expiry_date = ? AND location = ? LIMIT 1 FOR UPDATE',
+          [userId, barcode, expiry_date, location || 'Fridge']
+        );
+
+        if (existingProducts.length > 0) {
+          const existingProduct = existingProducts[0];
+          await connection.query(
+            'UPDATE products SET quantity_count = COALESCE(quantity_count, 1) + ? WHERE id = ? AND user_id = ?',
+            [quantityToAdd, existingProduct.id, userId]
+          );
+          const [updatedProducts] = await connection.query('SELECT * FROM products WHERE id = ?', [existingProduct.id]);
+          savedProduct = updatedProducts[0];
+        } else {
+          const [result] = await connection.query(
+            `INSERT INTO products (user_id, name, category, barcode, purchase_date, expiry_date, location, quantity, quantity_count, image_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, name, category, barcode, purchase_date, expiry_date, location || 'Fridge', quantity || null, quantityToAdd, image_url || null]
+          );
+          const [newProducts] = await connection.query('SELECT * FROM products WHERE id = ?', [result.insertId]);
+          savedProduct = newProducts[0];
+        }
+
+        await connection.commit();
+      } catch (err) {
+        await connection.rollback();
+        throw err;
+      } finally {
+        connection.release();
+      }
+    } else {
+      const [result] = await db.query(
+        `INSERT INTO products (user_id, name, category, barcode, purchase_date, expiry_date, location, quantity, quantity_count, image_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, name, category, null, purchase_date, expiry_date, location || 'Fridge', quantity || null, quantityToAdd, image_url || null]
+      );
+      const [newProducts] = await db.query('SELECT * FROM products WHERE id = ?', [result.insertId]);
+      savedProduct = newProducts[0];
+    }
 
     // Also add to scanned_history
     await db.query(
@@ -78,11 +119,9 @@ const addProduct = async (req, res) => {
       [userId, name]
     );
 
-    const [newProduct] = await db.query('SELECT * FROM products WHERE id = ?', [result.insertId]);
-
     return res.status(201).json({
       message: 'Product added successfully.',
-      product: newProduct[0]
+      product: savedProduct
     });
   } catch (err) {
     console.error('addProduct error:', err);
@@ -94,7 +133,7 @@ const addProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   const userId = req.user.id;
   const productId = req.params.id;
-  const { name, category, barcode, purchase_date, expiry_date, location, quantity, image_url } = req.body;
+  const { name, category, barcode, purchase_date, expiry_date, location, quantity, quantity_count, image_url } = req.body;
 
   try {
     // Verify ownership
@@ -104,9 +143,9 @@ const updateProduct = async (req, res) => {
     }
 
     await db.query(
-      `UPDATE products SET name=?, category=?, barcode=?, purchase_date=?, expiry_date=?, location=?, quantity=?, image_url=?
+      `UPDATE products SET name=?, category=?, barcode=?, purchase_date=?, expiry_date=?, location=?, quantity=?, quantity_count=?, image_url=?
        WHERE id = ? AND user_id = ?`,
-      [name, category, barcode || null, purchase_date, expiry_date, location, quantity || null, image_url || null, productId, userId]
+      [name, category, barcode || null, purchase_date, expiry_date, location, quantity || null, Math.max(1, parseInt(quantity_count, 10) || 1), image_url || null, productId, userId]
     );
 
     const [updated] = await db.query('SELECT * FROM products WHERE id = ?', [productId]);

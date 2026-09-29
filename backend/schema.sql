@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `expiry_date` DATE NOT NULL,
   `location` VARCHAR(100) DEFAULT 'Fridge',
   `quantity` VARCHAR(100) DEFAULT NULL,
+  `quantity_count` INT NOT NULL DEFAULT 1,
   `image_url` TEXT DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE

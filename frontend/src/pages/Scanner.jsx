@@ -10,6 +10,7 @@ import {
   QrCode, 
   Sparkles, 
   Plus, 
+  Minus,
   Check, 
   AlertCircle, 
   AlertTriangle,
@@ -80,6 +81,9 @@ const Scanner = () => {
   const [expiryDate, setExpiryDate] = useState('');
   const [location, setLocation] = useState('Fridge');
   const [quantity, setQuantity] = useState('');
+  const [quantityCount, setQuantityCount] = useState('1');
+  const [existingInventoryProduct, setExistingInventoryProduct] = useState(null);
+  const [isInventoryReview, setIsInventoryReview] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
 
@@ -190,7 +194,7 @@ const Scanner = () => {
   }, []);
 
   // Handle scanned or selected barcode
-  const handleBarcodeScanned = useCallback(async (code, prefilledMeta = null) => {
+  const handleBarcodeScanned = useCallback(async (code, prefilledMeta = null, inventoryProduct = null, reviewOnly = false) => {
     const cleanCode = String(code).trim();
     if (!cleanCode) return;
 
@@ -203,6 +207,26 @@ const Scanner = () => {
     setManualEntryMode(false);
     setBarcode(cleanCode);
     setPurchaseDate(new Date().toISOString().split('T')[0]);
+    setQuantityCount('1');
+    setExistingInventoryProduct(null);
+    setIsInventoryReview(false);
+
+    const matchedProduct = reviewOnly ? inventoryProduct : null;
+
+    if (matchedProduct) {
+      setExistingInventoryProduct(matchedProduct);
+      setIsInventoryReview(reviewOnly);
+      setIsRecognizedProduct(true);
+      setName(matchedProduct.name || `Product ${cleanCode}`);
+      setBrand('');
+      setImageUrl(matchedProduct.image_url || '');
+      setCategory(matchedProduct.category || 'Other');
+      setLocation(matchedProduct.location || 'Pantry');
+      setQuantity(matchedProduct.quantity || '1 unit');
+      setExpiryDate(String(matchedProduct.expiry_date).split('T')[0]);
+      setModalLoading(false);
+      return;
+    }
 
     if (prefilledMeta) {
       // Selected from Open Food Facts live catalog
@@ -446,6 +470,7 @@ const Scanner = () => {
         expiry_date: expiryDate,
         location,
         quantity: quantity || '1 unit',
+        quantity_count: Math.max(1, parseInt(quantityCount, 10) || 1),
         image_url: resolvedImageUrl || null
       });
 
@@ -458,6 +483,7 @@ const Scanner = () => {
         expiry_date: expiryDate,
         location,
         quantity: quantity || '1 unit',
+        quantity_count: Math.max(1, parseInt(quantityCount, 10) || 1),
         image_url: resolvedImageUrl || null
       };
 
@@ -1032,7 +1058,7 @@ const Scanner = () => {
                         className="simulator-item-btn"
                         style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', padding: '8px 12px' }}
                         disabled={!item.barcode}
-                        onClick={() => item.barcode && void handleBarcodeScanned(item.barcode)}
+                        onClick={() => item.barcode && void handleBarcodeScanned(item.barcode, null, item, true)}
                       >
                         <img
                           src={getProductImage(item.name, item.category, item.image_url)}
@@ -1041,7 +1067,7 @@ const Scanner = () => {
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <span className="sim-name" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
-                            {item.name} {item.quantity ? `(${item.quantity})` : ''}
+                            {item.name} {item.quantity ? `(${item.quantity})` : ''} {item.quantity_count > 1 ? `(${item.quantity_count} in stock)` : ''}
                           </span>
                           <span className="sim-barcode" style={{ display: 'block', fontSize: '11px', color: '#64748b' }}>
                             {item.barcode ? `Barcode: ${item.barcode} • [${item.category}]` : 'No barcode saved'}
@@ -1066,7 +1092,7 @@ const Scanner = () => {
               <div className="modal-title-with-icon">
                 <Sparkles size={18} className="icon-primary" />
                 <h3 className="modal-title compact">
-                  {isRecognizedProduct ? 'Review Scanned Product' : 'Product Verification Result'}
+                  {isInventoryReview ? 'Product Details' : (isRecognizedProduct ? 'Review Scanned Product' : 'Product Verification Result')}
                 </h3>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="icon-button-plain">
@@ -1141,7 +1167,7 @@ const Scanner = () => {
               <>
                 {isRecognizedProduct ? (
                   <div className="verified-success-badge">
-                    <Check size={13} /> Verified Product from Open Food Facts
+                    <Check size={13} /> {existingInventoryProduct ? 'Already in Your Inventory' : 'Verified Product from Open Food Facts'}
                   </div>
                 ) : (
                   <div className="verified-success-badge" style={{ background: '#ede9fe', color: '#6d28d9' }}>
@@ -1176,6 +1202,14 @@ const Scanner = () => {
                     <Loader2 size={20} className="spinner-anim" style={{ color: '#066e38' }} />
                     <span>Checking Open Food Facts Database...</span>
                   </div>
+                ) : isInventoryReview && existingInventoryProduct ? (
+                  <div className="two-column-grid">
+                    <div className="form-group"><label className="form-label">Purchase Date</label><div>{String(existingInventoryProduct.purchase_date).split('T')[0]}</div></div>
+                    <div className="form-group"><label className="form-label">Expiry Date</label><div>{String(existingInventoryProduct.expiry_date).split('T')[0]}</div></div>
+                    <div className="form-group"><label className="form-label">Storage Location</label><div>{existingInventoryProduct.location || 'Pantry'}</div></div>
+                    <div className="form-group"><label className="form-label">Package Size</label><div>{existingInventoryProduct.quantity || '1 unit'}</div></div>
+                    <div className="form-group"><label className="form-label">In Stock</label><div>{existingInventoryProduct.quantity_count || 1}</div></div>
+                  </div>
                 ) : (
                   <>
                     {(isRecognizedProduct || manualEntryMode || aiSuggestion) ? (
@@ -1188,6 +1222,7 @@ const Scanner = () => {
                             placeholder="Enter product name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            readOnly={Boolean(existingInventoryProduct)}
                             required
                           />
                         </div>
@@ -1199,6 +1234,7 @@ const Scanner = () => {
                               className="form-input"
                               value={category}
                               onChange={(e) => handleCategoryChange(e.target.value)}
+                              disabled={Boolean(existingInventoryProduct)}
                             >
                               <option value="Vegetables">Vegetables</option>
                               <option value="Dairy">Dairy</option>
@@ -1228,6 +1264,7 @@ const Scanner = () => {
                               className="form-input"
                               value={purchaseDate}
                               onChange={(e) => setPurchaseDate(e.target.value)}
+                              readOnly={Boolean(existingInventoryProduct)}
                               required
                             />
                           </div>
@@ -1239,18 +1276,20 @@ const Scanner = () => {
                               className="form-input"
                               value={expiryDate}
                               onChange={(e) => setExpiryDate(e.target.value)}
+                              readOnly={Boolean(existingInventoryProduct)}
                               required
                             />
                           </div>
                         </div>
 
-                        <div className="two-column-grid">
+                        <div className="scanner-inventory-fields">
                           <div className="form-group">
                             <label className="form-label">Storage Location</label>
                             <select
                               className="form-input"
                               value={location}
                               onChange={(e) => setLocation(e.target.value)}
+                              disabled={Boolean(existingInventoryProduct)}
                             >
                               <option value="Fridge">Fridge</option>
                               <option value="Freezer">Freezer</option>
@@ -1260,14 +1299,50 @@ const Scanner = () => {
                           </div>
 
                           <div className="form-group">
-                            <label className="form-label">Quantity / Unit</label>
+                            <label className="form-label">Package Size</label>
                             <input
                               type="text"
                               className="form-input"
                               placeholder="e.g. 500g, 1 Liter"
                               value={quantity}
                               onChange={(e) => setQuantity(e.target.value)}
+                              readOnly={Boolean(existingInventoryProduct)}
                             />
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">{existingInventoryProduct ? 'Additional Quantity' : 'Number of Items'}</label>
+                            <div className="quantity-stepper">
+                              <button
+                                type="button"
+                                className="quantity-stepper-button"
+                                aria-label="Decrease item count"
+                                title="Decrease item count"
+                                onClick={() => setQuantityCount((count) => String(Math.max(1, (parseInt(count, 10) || 1) - 1)))}
+                              >
+                                <Minus size={16} />
+                              </button>
+                              <input
+                                type="number"
+                                className="form-input quantity-stepper-input"
+                                placeholder="1"
+                                min="1"
+                                step="1"
+                                value={quantityCount}
+                                onChange={(e) => setQuantityCount(e.target.value)}
+                                aria-label="Number of items"
+                                required
+                              />
+                              <button
+                                type="button"
+                                className="quantity-stepper-button"
+                                aria-label="Increase item count"
+                                title="Increase item count"
+                                onClick={() => setQuantityCount((count) => String((parseInt(count, 10) || 1) + 1))}
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </>
@@ -1284,14 +1359,14 @@ const Scanner = () => {
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Discard
                 </button>
-                {(isRecognizedProduct || manualEntryMode || aiSuggestion) && (
+                {!isInventoryReview && (isRecognizedProduct || manualEntryMode || aiSuggestion) && (
                   <button
                     type="submit"
                     className="btn btn-primary"
                     disabled={modalLoading || !name.trim()}
                   >
                     <Plus size={16} />
-                    <span>Save to Inventory</span>
+                    <span>Add to Inventory</span>
                   </button>
                 )}
               </div>

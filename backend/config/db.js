@@ -16,6 +16,12 @@ const promisePool = pool.promise();
 // Auto-migrate: Ensure image_url column exists in products table
 (async () => {
   try {
+    const [quantityCountCols] = await promisePool.query("SHOW COLUMNS FROM products LIKE 'quantity_count'");
+    if (quantityCountCols.length === 0) {
+      await promisePool.query("ALTER TABLE products ADD COLUMN quantity_count INT NOT NULL DEFAULT 1 AFTER quantity");
+      console.log("✅ Auto-migration: Added quantity_count column to products table.");
+    }
+
     const [cols] = await promisePool.query("SHOW COLUMNS FROM products LIKE 'image_url'");
     if (cols.length === 0) {
       await promisePool.query("ALTER TABLE products ADD COLUMN image_url TEXT DEFAULT NULL AFTER quantity");
