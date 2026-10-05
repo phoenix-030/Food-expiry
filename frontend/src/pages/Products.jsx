@@ -14,8 +14,10 @@ import {
   X 
 } from 'lucide-react';
 import { getProductImage } from '../utils/productImages';
+import { useToast } from '../context/useToast';
 
 const Products = () => {
+  const showToast = useToast();
   const [searchParams] = useSearchParams();
   const urlSearch = searchParams.get('search') || '';
 
@@ -196,17 +198,19 @@ const Products = () => {
           name, category, barcode, purchase_date: purchaseDate, expiry_date: expiryDate, location, quantity,
           quantity_count: Math.max(1, parseInt(quantityCount, 10) || 1), image_url: resolvedImg
         });
+        showToast('Product updated successfully!', { position: 'center' });
       } else {
         // Add Mode
         await api.addProduct({
           name, category, barcode, purchase_date: purchaseDate, expiry_date: expiryDate, location, quantity,
           quantity_count: Math.max(1, parseInt(quantityCount, 10) || 1), image_url: resolvedImg
         });
+        showToast('Product added successfully!', { position: 'center' });
       }
       setIsModalOpen(false);
       fetchInventory();
     } catch (err) {
-      alert(err.message || 'Error saving product');
+      showToast(err.message || 'Error saving product', { type: 'error' });
     } finally {
       setModalLoading(false);
     }
@@ -217,9 +221,10 @@ const Products = () => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
       await api.deleteProduct(id);
+      showToast('Product deleted successfully!');
       fetchInventory();
     } catch (err) {
-      alert(err.message || 'Error deleting product');
+      showToast(err.message || 'Error deleting product', { type: 'error' });
     }
   };
 

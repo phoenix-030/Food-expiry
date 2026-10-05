@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { useToast } from '../context/useToast';
 import { Mail, Lock, User, Leaf, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import '../styles/Register.module.css';
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const showToast = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -35,6 +37,7 @@ const Register = () => {
 
     try {
       await register(name, email, password, role);
+      showToast('Registered successfully!');
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed.');

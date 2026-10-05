@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { ToastProvider } from "./context/ToastContext";
 import { useAuth } from "./context/useAuth";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -120,35 +121,37 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <LanguageProvider>
-          <BrowserRouter>
-            <ErrorBoundary>
-              <Suspense fallback={<PageFallback />}>
-                <Routes>
-                  {/* Public routes — redirect to dashboard if already logged in */}
-                  <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
-                  <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+    <ToastProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <BrowserRouter>
+              <ErrorBoundary>
+                <Suspense fallback={<PageFallback />}>
+                  <Routes>
+                    {/* Public routes — redirect to dashboard if already logged in */}
+                    <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
+                    <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-                  {/* Protected routes — redirect to login if not authenticated */}
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/scanner" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
-                  <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-                  <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                  <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+                    {/* Protected routes — redirect to login if not authenticated */}
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/scanner" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
+                    <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+                    <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                    <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
 
-                  {/* Fallback */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </ErrorBoundary>
-          </BrowserRouter>
-        </LanguageProvider>
-      </ThemeProvider>
-    </AuthProvider>
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
+            </BrowserRouter>
+          </LanguageProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

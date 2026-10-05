@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { useToast } from '../context/useToast';
 import { Mail, Lock, Eye, EyeOff, Leaf, ArrowRight } from 'lucide-react';
 import '../styles/Login.module.css';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const showToast = useToast();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,6 +40,7 @@ const Login = () => {
 
     try {
       await login(email, password);
+      showToast('Logged in successfully!');
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Invalid email or password.');

@@ -16,9 +16,11 @@ import {
   X
 } from 'lucide-react';
 import { getProductImage } from '../utils/productImages';
+import { useToast } from '../context/useToast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const showToast = useToast();
   
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -118,9 +120,10 @@ const Dashboard = () => {
         image_url: resolvedImg
       });
       setIsModalOpen(false);
+      showToast('Product added successfully!', { position: 'center' });
       void fetchStats(); // refresh dashboard immediately
     } catch (err) {
-      alert(err.message || 'Error adding product');
+      showToast(err.message || 'Error adding product', { type: 'error' });
     } finally {
       setModalLoading(false);
     }

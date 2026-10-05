@@ -26,6 +26,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { getProductImage, CURATED_VEGETABLES, CURATED_DAIRY } from '../utils/productImages';
+import { useToast } from '../context/useToast';
 
 const playBeep = (freq = 880) => {
   try {
@@ -48,6 +49,7 @@ const playBeep = (freq = 880) => {
 };
 
 const Scanner = () => {
+  const showToast = useToast();
   const qrScannerRef = useRef(null);
   const fileDummyScannerRef = useRef(null);
   const isStartingRef = useRef(false);
@@ -506,6 +508,7 @@ const Scanner = () => {
       ]);
 
       setIsModalOpen(false);
+      showToast('Product added successfully!', { position: 'center' });
     } catch (err) {
       console.error('Save scanned error:', err);
       setLookupError('Failed to save to inventory: ' + (err.message || 'Server error'));

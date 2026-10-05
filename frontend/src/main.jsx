@@ -6,6 +6,7 @@ import './styles/notifications.css'
 import './styles/settings.css'
 import './styles/history.css'
 import './styles/analytics.css'
+import './styles/toast.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(

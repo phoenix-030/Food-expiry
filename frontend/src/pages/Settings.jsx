@@ -5,18 +5,18 @@ import Navbar from '../components/Navbar';
 import { useAuth } from '../context/useAuth';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/useToast';
 import '../styles/settings.css';
 
 const Settings = () => {
   const { currentUser, updateProfile } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const showToast = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [enableOpenFoodFacts, setEnableOpenFoodFacts] = useState(() => {
     return localStorage.getItem('freshtrack_enable_openfoodfacts') === 'true';
   });
@@ -31,7 +31,7 @@ const Settings = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      setError('Please choose an image smaller than 2 MB.');
+      showToast('Please choose an image smaller than 2 MB.', { type: 'error' });
       return;
     }
 
@@ -49,14 +49,12 @@ const Settings = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSaving(true);
-    setError('');
-    setMessage('');
 
     try {
       await updateProfile({ name, email, avatar_url: avatarUrl });
-      setMessage('Profile updated successfully.');
+      showToast('Profile updated successfully!');
     } catch (err) {
-      setError(err.message || 'Could not update your profile.');
+      showToast(err.message || 'Could not update your profile.', { type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -86,8 +84,6 @@ const Settings = () => {
             </div>
 
             <form className="settings-profile-form" onSubmit={handleSubmit}>
-              {error && <p className="settings-message settings-message-error">{error}</p>}
-              {message && <p className="settings-message settings-message-success">{message}</p>}
 
               <div className="settings-form-grid">
                 <label className="form-group">

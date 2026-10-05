@@ -20,11 +20,13 @@ import Navbar from '../components/Navbar';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 import { getProductImage } from '../utils/productImages';
+import { useToast } from '../context/useToast';
 import '../styles/notifications.css';
 
 const Notifications = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const showToast = useToast();
 
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState({
@@ -39,7 +41,6 @@ const Notifications = () => {
   // Filter state
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'expired' | 'critical' | 'soon'
   const [selectedLocation, setSelectedLocation] = useState('all'); // 'all' | location string
-  const [actionSuccessMsg, setActionSuccessMsg] = useState('');
 
   const notifiedIds = useRef(new Set());
 
@@ -87,8 +88,7 @@ const Notifications = () => {
 
     try {
       await api.deleteProduct(product.id);
-      setActionSuccessMsg(`"${product.name}" marked as consumed!`);
-      setTimeout(() => setActionSuccessMsg(''), 3500);
+      showToast(`"${product.name}" marked as consumed!`);
       
       // Update local state immediately
       setItems((prev) => prev.filter((p) => p.id !== product.id));
@@ -100,7 +100,7 @@ const Notifications = () => {
         upcomingCount: product.diffDays > 2 ? Math.max(0, prev.upcomingCount - 1) : prev.upcomingCount
       }));
     } catch (err) {
-      alert('Error updating inventory: ' + (err.message || 'Server error'));
+      showToast('Error updating inventory: ' + (err.message || 'Server error'), { type: 'error' });
     }
   };
 
@@ -183,12 +183,6 @@ const Notifications = () => {
                 </div>
               </div>
 
-              {actionSuccessMsg && (
-                <div style={{ background: '#dcfce7', color: '#15803d', padding: '6px 14px', borderRadius: '8px', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={16} />
-                  <span>{actionSuccessMsg}</span>
-                </div>
-              )}
             </div>
 
             {/* Notification Statistics Summary Bar */}
