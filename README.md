@@ -1,5 +1,7 @@
 # Expire Reminder
 
+For deployment requirements and the production hosting process, see [HOSTING.md](./HOSTING.md).
+
 Expire Reminder is a full-stack inventory and expiry tracking application designed for households and small businesses. It helps users store grocery and household items, track expiry dates, scan product barcodes, monitor expiring inventory, and get quick product insights through Open Food Facts and AI-assisted product recognition.
 
 ## Project Overview
