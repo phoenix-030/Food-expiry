@@ -1,0 +1,12 @@
+{
+  "name": "expire-reminder-app",
+  "version": "1.0.0",
+  "description": "Full-stack food expiry reminder application",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix frontend",
+    "start": "node backend/server.js",
+    "render-build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "render-start": "node backend/server.js"
+  }
+}

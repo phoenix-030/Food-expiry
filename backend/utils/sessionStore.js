@@ -4,10 +4,13 @@ const db = require('../config/db');
 const SESSION_COOKIE_NAME = 'freshtrack_session';
 const SESSION_TTL_DAYS = 10;
 
+const isProd = process.env.NODE_ENV === 'production';
+const isCrossDomain = process.env.CROSS_DOMAIN_COOKIES === 'true';
+
 const SESSION_COOKIE_BASE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax',
-  secure: process.env.NODE_ENV === 'production'
+  sameSite: isCrossDomain ? 'none' : 'lax',
+  secure: isCrossDomain ? true : isProd
 };
 
 const SESSION_COOKIE_OPTS = {
