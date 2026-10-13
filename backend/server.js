@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const compression = require("compression");
+const { initializeDatabase } = require('./config/db');
 
 const app = express();
 
@@ -72,4 +73,15 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+
+const startServer = async () => {
+  try {
+    await initializeDatabase();
+    app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+  } catch (err) {
+    console.error('Database initialization failed:', err);
+    process.exit(1);
+  }
+};
+
+startServer();

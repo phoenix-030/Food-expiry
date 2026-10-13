@@ -32,9 +32,15 @@ const poolConfig = process.env.DATABASE_URL
 const pool = mysql.createPool(poolConfig);
 const promisePool = pool.promise();
 
-// Auto-migrate: Ensure all tables and required columns exist
-(async () => {
-  try {
+// Ensure all tables and required columns exist before the HTTP server accepts
+// requests. This prevents a newly deployed service from serving registration
+// requests while its database is still empty.
+let initializeDatabasePromise;
+
+const initializeDatabase = () => {
+  if (initializeDatabasePromise) return initializeDatabasePromise;
+
+  initializeDatabasePromise = (async () => {
     // 1. Users table
     await promisePool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -118,9 +124,11 @@ const promisePool = pool.promise();
       await promisePool.query("ALTER TABLE products ADD COLUMN image_url TEXT DEFAULT NULL AFTER quantity");
       console.log("✅ Auto-migration: Added image_url column to products table.");
     }
-  } catch (err) {
-    console.warn("Database initialization/column check notice:", err.message);
-  }
-})();
+    console.log('Database initialization complete.');
+  })();
+
+  return initializeDatabasePromise;
+};
 
 module.exports = promisePool;
+module.exports.initializeDatabase = initializeDatabase;
